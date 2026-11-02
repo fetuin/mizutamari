@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>雨上がりの水路</title>
+<meta name="description" content="雨上がりの校庭で、木の棒で細い筋を引き、やわらかくなった土を手で広げて水たまりの水を側溝へ流す水路づくりゲーム。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Klee+One:wght@600&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap">
+<style>
+/* Layout: one column. Title, the schoolyard as the stage, then a gauge strip and the tools beneath it. */
+:root{
+  --bg:#e5eaec; --surface:#f4f6f6; --rule:#c9d2d6; --ink:#1d2930; --muted:#596972;
+  --accent:#2b6a8a; --accent-ink:#ffffff; --soil:#86603c; --gold:#c8930f; --good:#36744a;
+  --f-display:"Klee One","Hiragino Mincho ProN","Yu Mincho",serif;
+  --f-body:"Zen Kaku Gothic New","Hiragino Sans","Noto Sans JP","Yu Gothic",system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#12191d; --surface:#1b242a; --rule:#2e3a41; --ink:#e2e9ec; --muted:#93a3ab;
+  --accent:#78b3cf; --accent-ink:#0f1a20; --soil:#c69c70; --gold:#e3b232; --good:#7cbf8c; color-scheme:dark } }
+:root[data-theme="dark"]{
+  --bg:#12191d; --surface:#1b242a; --rule:#2e3a41; --ink:#e2e9ec; --muted:#93a3ab;
+  --accent:#78b3cf; --accent-ink:#0f1a20; --soil:#c69c70; --gold:#e3b232; --good:#7cbf8c; color-scheme:dark }
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.6}
+.wrap{max-width:1112px;margin:0 auto;padding-block:20px 36px;display:flex;flex-direction:column;gap:14px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+
+/* アクセスカウンター（最上部の帯） */
+.counter{display:flex;justify-content:flex-end;flex-wrap:wrap;gap:4px 16px;
+  font-size:12.5px;color:var(--muted);background:var(--surface);border-bottom:1px solid var(--rule);
+  padding-block:calc(6px + env(safe-area-inset-top,0px)) 6px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  font-variant-numeric:tabular-nums}
+.counter b{color:var(--ink);font-weight:700;margin-left:4px}
+.site-foot{display:flex;flex-wrap:wrap;justify-content:space-between;gap:6px 16px;
+  font-size:13px;color:var(--muted);border-top:1px solid var(--rule);padding-top:14px;margin-top:6px}
+.site-foot a{color:var(--accent)}
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:6px 20px}
+h1{font-family:var(--f-display);font-weight:600;font-size:clamp(26px,5vw,38px);line-height:1.15;margin:0;letter-spacing:.04em;text-wrap:balance}
+.lead{margin:2px 0 0;color:var(--muted);font-size:14px;max-width:40em}
+.place{font-family:var(--f-display);font-size:17px;color:var(--soil);white-space:nowrap}
+
+.stage{position:relative;width:100%;aspect-ratio:3/2;max-width:100%;border-radius:4px;overflow:hidden;
+  box-shadow:0 1px 0 var(--rule),0 10px 30px -18px rgba(20,30,36,.55);background:#b99a72}
+canvas{display:block;width:100%;height:100%;touch-action:none;cursor:crosshair}
+.hint{position:absolute;left:12px;bottom:12px;background:rgba(24,34,40,.78);color:#f1f4f5;font-size:13px;
+  padding:6px 12px;border-radius:999px;pointer-events:none;transition:opacity .6s;max-width:calc(100% - 24px)}
+.hint.off{opacity:0}
+
+.result{position:absolute;inset:0;display:grid;place-items:center;background:rgba(18,26,30,.38);padding:16px}
+.card{background:var(--surface);color:var(--ink);border-radius:6px;padding:20px 22px;max-width:360px;width:100%;
+  display:flex;flex-direction:column;gap:10px;box-shadow:0 20px 40px -20px rgba(0,0,0,.6)}
+.card h2{font-family:var(--f-display);font-weight:600;font-size:26px;margin:0;line-height:1.2}
+.card p{margin:0;font-size:14px;color:var(--muted)}
+.stars{font-size:26px;letter-spacing:.12em;color:var(--gold)}
+.stars .off{color:var(--rule)}
+.card .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}
+
+.gauges{display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr;gap:10px 22px;align-items:start}
+.g{display:flex;flex-direction:column;gap:3px;min-width:0}
+.lbl{font-size:12px;letter-spacing:.08em;color:var(--muted)}
+.val{font-size:20px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.2}
+.val small{font-size:13px;font-weight:500;color:var(--muted);margin-left:4px}
+.bar{position:relative;height:8px;background:var(--rule);border-radius:4px;margin-top:3px;margin-bottom:18px}
+.bar i{position:absolute;left:0;top:0;bottom:0;background:var(--accent);border-radius:4px;transition:width .3s}
+.bar b{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--ink);left:15%}
+.bar em{position:absolute;top:11px;left:15%;transform:translateX(-50%);font-style:normal;font-size:11px;color:var(--muted);white-space:nowrap}
+.sub{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.hard{display:flex;gap:3px;margin-top:5px}
+.hard span{flex:1;height:6px;border-radius:2px;background:var(--rule)}
+.hard span.on{background:var(--soil)}
+
+.tools{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-top:4px}
+.grp{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.seg{display:inline-flex;border:1px solid var(--rule);border-radius:6px;overflow:hidden;background:var(--surface)}
+.seg button{border:0;border-radius:0}
+.seg button+button{border-left:1px solid var(--rule)}
+button{font:inherit;font-size:14px;color:var(--ink);background:var(--surface);border:1px solid var(--rule);
+  border-radius:6px;padding:7px 14px;cursor:pointer;min-height:38px}
+button:hover{border-color:var(--muted)}
+button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.levels{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.levels button{display:flex;flex-direction:column;align-items:flex-start;gap:0;text-align:left;padding:8px 12px;min-width:0}
+.levels .n{font-size:11px;letter-spacing:.08em;color:var(--muted)}
+.levels button[aria-pressed="true"] .n{color:inherit;opacity:.8}
+.levels .t{font-family:var(--f-display);font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.levels .s{font-size:12px;color:var(--gold);letter-spacing:.1em;white-space:nowrap}
+.levels .s i{font-style:normal;color:var(--muted);letter-spacing:0;margin-left:6px;font-variant-numeric:tabular-nums}
+.levels button[aria-pressed="true"] .s i{color:inherit}
+.levels button[aria-pressed="true"] .s{color:inherit}
+.foot{font-size:12px;color:var(--muted);margin:0;max-width:44em}
+@media (max-width:700px){
+  .gauges{grid-template-columns:1fr 1fr}
+  .gauges .g:first-child{grid-column:1 / -1}
+  .levels{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+</style>
+</head>
+<body>
+<!-- アクセスカウンター: data-src にカウンターCGIの場所、data-page にこのページのタグを書く -->
+<div class="counter" id="access-counter" data-src="counter.cgi" data-page="mizutamari" aria-label="アクセス数">
+  <span>アクセス<b data-k="total">–</b></span>
+  <span>今日<b data-k="today">–</b></span>
+  <span>昨日<b data-k="yesterday">–</b></span>
+</div>
+
+<div class="wrap">
+  <header>
+    <div>
+      <h1>雨上がりの水路</h1>
+      <p class="lead">校庭に残った水たまりを、側溝まで流そう。かちかちの地面には木の棒で細い筋しか引けない。でも水が通ると土はやわらかくなって、手で広げられるようになる。</p>
+    </div>
+    <div class="place" id="place">朝礼台の前</div>
+  </header>
+
+  <div class="stage" id="stage">
+    <canvas id="cv" aria-label="校庭の地面。なぞって溝をほる"></canvas>
+    <div class="hint" id="hint">まず木の棒で、水たまりから側溝まで細い筋を引いてみよう</div>
+    <div class="result" id="result" hidden>
+      <div class="card" role="dialog" aria-labelledby="rt">
+        <h2 id="rt">水が引いた！</h2>
+        <div class="stars" id="rstars"></div>
+        <p id="rtext"></p>
+        <div class="row">
+          <button class="primary" id="next">次の場所へ</button>
+          <button id="stay">このまま眺める</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <section class="gauges" aria-live="polite">
+    <div class="g">
+      <span class="lbl">残っている水たまり</span>
+      <span class="val" id="vRem">0.0 L<small>100%</small></span>
+      <div class="bar"><i id="barI" style="width:100%"></i><b></b><em>ここまで抜けばクリア</em></div>
+    </div>
+    <div class="g">
+      <span class="lbl">側溝へ流れた水</span>
+      <span class="val" id="vDrain">0.000 L</span>
+      <span class="sub" id="vRate">いま 0.000 L/秒</span>
+    </div>
+    <div class="g">
+      <span class="lbl">ほった土</span>
+      <span class="val" id="vSoil">0.0 L<small>目安 15 L</small></span>
+    </div>
+    <div class="g">
+      <span class="lbl">経過時間</span>
+      <span class="val" id="vTime">0:00</span>
+      <span class="sub" id="vTimeSub">掘りはじめると計測</span>
+    </div>
+    <div class="g">
+      <span class="lbl">ゆびさした土</span>
+      <span class="val" id="vHard">—</span>
+      <div class="hard" id="hardBar" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div>
+    </div>
+  </section>
+
+  <div class="tools">
+    <div class="grp">
+      <div class="seg" role="group" aria-label="道具">
+        <button id="tStick" aria-pressed="true">木の棒</button>
+        <button id="tHand" aria-pressed="false">手</button>
+      </div>
+      <button id="fast" aria-pressed="false">早送り</button>
+      <button id="reset">やり直す</button>
+    </div>
+    <p class="foot">木の棒はどんなにかたい土でも細く掘れますが、流れる水はちょろちょろです。水が通った溝のまわりはやわらかくなるので、手で溝を広げて流れを太くしましょう。掘った土は溝のわきに積もります。</p>
+  </div>
+
+  <nav class="levels" id="levels" aria-label="場所をえらぶ"></nav>
+
+  <footer class="site-foot">
+    <span>雨上がりの水路</span>
+    <span>開発元：<a href="https://usepocket.com" target="_blank" rel="noopener">usePocket</a></span>
+  </footer>
+</div>
+
+<script>
+// アクセスカウンター（CGIに届かないときは帯ごと隠す）
+(() => {
+  const box = document.getElementById('access-counter');
+  if (!box) return;
+  const src = box.dataset.src, page = box.dataset.page;
+  if (!src || !page || location.protocol === 'file:') { box.hidden = true; return; }
+  fetch(src + '?page=' + encodeURIComponent(page), { cache: 'no-store' })
+    .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+    .then(d => {
+      box.querySelectorAll('[data-k]').forEach(el => {
+        const v = Number(d[el.dataset.k]);
+        el.textContent = Number.isFinite(v) ? v.toLocaleString('ja-JP') : '–';
+      });
+    })
+    .catch(() => { box.hidden = true; });
+})();
+</script>
+
+<script>
+(()=>{
+// 1マス = 4cm、高さ1 = 10cm → 1マス×高さ1 = 0.16 L
+const S=2.5, GW=240, GH=160, N=GW*GH, CELL_L=0.16;
+const MAXDIG=0.5, MAXPILE=0.5, C=0.2, GOAL=0.15;
+// 浅い水ほど地面との摩擦で流れにくい（深さ1cm以上でほぼ自由に流れる）
+const dampOf=w=>{const k=w>=0.15?1:w/0.15;return 0.55+0.425*k*k;};
+const STICK=0.95;          // 木の棒：ほぼ1マス（4cm）幅の筋
+const HAND=3.2;            // 手：12cmほどの幅でかき出す
+const HAND_MIN=0.35;       // これよりかたい土は手では掘れない
+const TICK_MS=1000/30;     // 30fpsで更新
+const SUB=5;               // 1更新あたりの水の計算回数
+
+// 座標は10cm単位で書いて、読み込み時に4cmマスへ換算
+const RAW=[
+ {name:"朝礼台の前", seed:11, par:15, leaves:5,
+  drain:{edge:"bottom",a:40,b:56},
+  dips:[{x:48,y:29,rx:11,ry:7,d:.34}],
+  obj:[{t:"stage",x0:38,y0:1,x1:58,y1:9}],
+  lines:[{t:"seg",x0:8,y0:18,x1:88,y1:18},{t:"seg",x0:30,y0:44,x1:30,y1:52},{t:"seg",x0:66,y0:44,x1:66,y1:52}]},
+ {name:"鉄棒の下", seed:23, par:30, leaves:6,
+  drain:{edge:"right",a:25,b:40},
+  dips:[{x:22,y:32,rx:4.8,ry:13,d:.32},{x:50,y:32,rx:5.2,ry:11,d:.3}],
+  obj:[{t:"post",x:22,y:16,r:1.5},{t:"post",x:22,y:48,r:1.5},{t:"post",x:50,y:18,r:1.5},{t:"post",x:50,y:46,r:1.5},
+       {t:"bar",x0:22,y0:16,x1:22,y1:48},{t:"bar",x0:50,y0:18,x1:50,y1:46}],
+  lines:[]},
+ {name:"水飲み場の前", seed:61, par:25, leaves:5,
+  drain:{edge:"right",a:4,b:18},
+  dips:[{x:78,y:42,rx:11,ry:6,d:.32},{x:58,y:40,rx:6,ry:5,d:.26}],
+  obj:[{t:"block",style:"fountain",x0:68,y0:26,x1:90,y1:34}],
+  lines:[]},
+ {name:"トラックのカーブ", seed:37, par:35, leaves:7,
+  drain:{edge:"top",a:3,b:18},
+  dips:[{x:32,y:42,rx:9,ry:7,d:.3},{x:45,y:25,rx:8,ry:8,d:.33},{x:64,y:13,rx:9,ry:6,d:.3}],
+  obj:[{t:"stone",x:20,y:20,r:2.2},{t:"stone",x:30,y:10,r:1.8},{t:"stone",x:56,y:36,r:2.4},{t:"stone",x:14,y:44,r:1.7},
+       {t:"stone",x:74,y:30,r:2},{t:"stone",x:40,y:52,r:1.6}],
+  lines:[{t:"arc",cx:84,cy:66,r:46,a0:180,a1:272},{t:"arc",cx:84,cy:66,r:60,a0:180,a1:272}]},
+ {name:"ブランコの下", seed:73, par:40, leaves:6,
+  drain:{edge:"top",a:40,b:56},
+  dips:[{x:28,y:36,rx:3.6,ry:9,d:.38},{x:43,y:36,rx:3.6,ry:9,d:.36},{x:58,y:36,rx:3.6,ry:9,d:.38},{x:73,y:36,rx:3.6,ry:9,d:.34}],
+  obj:[{t:"post",x:16,y:36,r:1.6},{t:"post",x:85,y:36,r:1.6},{t:"bar",x0:16,y0:36,x1:85,y1:36},
+       {t:"seat",x:28,y:38},{t:"seat",x:43,y:34},{t:"seat",x:58,y:37},{t:"seat",x:73,y:36}],
+  lines:[{t:"seg",x0:10,y0:52,x1:90,y1:52}]},
+ {name:"体育倉庫の裏", seed:83, par:40, leaves:6,
+  drain:{edge:"right",a:44,b:60},
+  dips:[{x:40,y:15,rx:27,ry:3.6,d:.28},{x:76,y:30,rx:6,ry:6,d:.3}],
+  obj:[{t:"block",style:"shed",x0:8,y0:0,x1:72,y1:11},{t:"stone",x:56,y:26,r:1.8},{t:"stone",x:30,y:34,r:2.1},{t:"stone",x:66,y:46,r:1.6}],
+  lines:[]},
+ {name:"砂場のそば", seed:51, par:45, leaves:8,
+  drain:{edge:"bottom",a:2,b:16},
+  dips:[{x:72,y:14,rx:9,ry:6,d:.34},{x:27,y:50,rx:7,ry:6,d:.3},{x:80,y:48,rx:7,ry:7,d:.36}],
+  obj:[{t:"sand",x0:38,y0:20,x1:62,y1:42},{t:"tree",x:12,y:12,r:3}],
+  lines:[]},
+ {name:"サッカーゴール前", seed:97, par:45, leaves:6,
+  drain:{edge:"left",a:4,b:18},
+  dips:[{x:48,y:53,rx:11,ry:5.5,d:.36},{x:48,y:37,rx:5,ry:4,d:.26}],
+  obj:[{t:"post",x:36,y:61,r:1},{t:"post",x:60,y:61,r:1},{t:"net",x0:36,y0:61,x1:60,y1:64},{t:"bar",x0:36,y0:61,x1:60,y1:61}],
+  lines:[{t:"seg",x0:30,y0:64,x1:30,y1:47},{t:"seg",x0:30,y0:47,x1:66,y1:47},{t:"seg",x0:66,y0:47,x1:66,y1:64},
+         {t:"seg",x0:18,y0:64,x1:18,y1:30},{t:"seg",x0:18,y0:30,x1:78,y1:30},{t:"seg",x0:78,y0:30,x1:78,y1:64}]},
+ {name:"のぼり棒のまわり", seed:107, par:45, leaves:7,
+  drain:{edge:"bottom",a:70,b:86},
+  dips:[{x:45,y:31,rx:19,ry:4.6,d:.3},{x:20,y:50,rx:6,ry:5,d:.28}],
+  obj:[{t:"post",x:30,y:30,r:1.1},{t:"post",x:36,y:30,r:1.1},{t:"post",x:42,y:30,r:1.1},{t:"post",x:48,y:30,r:1.1},
+       {t:"post",x:54,y:30,r:1.1},{t:"post",x:60,y:30,r:1.1},{t:"bar",x0:30,y0:30,x1:60,y1:30},
+       {t:"stone",x:62,y:48,r:2},{t:"stone",x:46,y:52,r:1.6}],
+  lines:[]},
+ {name:"百葉箱の横", seed:113, par:55, leaves:8,
+  drain:{edge:"left",a:26,b:40},
+  dips:[{x:30,y:15,rx:7,ry:5,d:.3},{x:63,y:44,rx:8,ry:6,d:.32},{x:20,y:50,rx:6,ry:6,d:.3},{x:75,y:14,rx:6,ry:5,d:.3}],
+  obj:[{t:"block",style:"hut",x0:44,y0:24,x1:52,y1:32},{t:"tree",x:84,y:52,r:2.6},
+       {t:"stone",x:18,y:26,r:1.8},{t:"stone",x:38,y:40,r:2},{t:"stone",x:56,y:16,r:1.7},{t:"stone",x:28,y:56,r:1.5},
+       {t:"stone",x:70,y:30,r:2.2},{t:"stone",x:12,y:40,r:1.4},{t:"stone",x:46,y:56,r:1.8}],
+  lines:[]}
+];
+const SCALE_KEYS=["x","y","r","rx","ry","x0","y0","x1","y1","cx","cy","a","b"];
+function scaleObj(o){const n={...o};for(const k of SCALE_KEYS)if(typeof n[k]==="number")n[k]=n[k]*S;return n;}
+const LEVELS=RAW.map(L=>({...L,drain:(d=>({edge:d.edge,a:Math.round(d.a*S),b:Math.round(d.b*S)}))(L.drain),
+  dips:L.dips.map(scaleObj),obj:L.obj.map(scaleObj),lines:L.lines.map(scaleObj)}));
+
+// ---------- state ----------
+let H,H0,FL,W,fL,fR,fU,fD,wet,soft,hard,drain,lineM,grain,tmp;
+let V0=1, drained=0, soilDug=0, playTicks=0, started=false, clearTicks=0, levelIdx=0, cleared=false, dismissed=false;
+let leaves=[], ripples=[], tool="stick", rateHist=[], fast=false, dug=false, tick=0;
+let best={};
+try{best=JSON.parse(localStorage.getItem("suiro-best5")||"{}")||{}}catch(e){best={}}
+const reduced=matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+function rng(seed){return()=>{seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;}}
+function valueNoise(r,cell){
+  const cw=Math.ceil(GW/cell)+2, ch=Math.ceil(GH/cell)+2, v=new Float32Array(cw*ch);
+  for(let i=0;i<v.length;i++)v[i]=r()*2-1;
+  return (x,y)=>{const fx=x/cell,fy=y/cell,ix=Math.floor(fx),iy=Math.floor(fy);let tx=fx-ix,ty=fy-iy;
+    tx=tx*tx*(3-2*tx);ty=ty*ty*(3-2*ty);const a=v[iy*cw+ix],b=v[iy*cw+ix+1],c=v[(iy+1)*cw+ix],d=v[(iy+1)*cw+ix+1];
+    return a+(b-a)*tx+(c-a)*ty+(a-b-c+d)*tx*ty;};
+}
+function distSeg(px,py,x0,y0,x1,y1){const dx=x1-x0,dy=y1-y0,L=dx*dx+dy*dy;let t=L?((px-x0)*dx+(py-y0)*dy)/L:0;t=Math.max(0,Math.min(1,t));return Math.hypot(px-(x0+t*dx),py-(y0+t*dy));}
+function drainSeg(dr){
+  if(dr.edge==="bottom")return[dr.a,GH-1,dr.b-1,GH-1];
+  if(dr.edge==="top")return[dr.a,0,dr.b-1,0];
+  if(dr.edge==="right")return[GW-1,dr.a,GW-1,dr.b-1];
+  return[0,dr.a,0,dr.b-1];
+}
+
+// 側溝から水位を広げていき、くぼみに残る水を一度に求める（雨上がりの状態）
+function settleRain(){
+  const lvl=new Float32Array(N).fill(Infinity), done=new Uint8Array(N);
+  const hi=new Int32Array(N*4+16), hk=new Float32Array(N*4+16);let n=0;
+  const push=(i,k)=>{let c=n++;hi[c]=i;hk[c]=k;while(c>0){const p=(c-1)>>1;if(hk[p]<=hk[c])break;
+    [hi[p],hi[c]]=[hi[c],hi[p]];[hk[p],hk[c]]=[hk[c],hk[p]];c=p;}};
+  const pop=()=>{const i=hi[0];n--;hi[0]=hi[n];hk[0]=hk[n];let c=0;
+    for(;;){const l=c*2+1,r=l+1;let m=c;if(l<n&&hk[l]<hk[m])m=l;if(r<n&&hk[r]<hk[m])m=r;if(m===c)break;
+      [hi[m],hi[c]]=[hi[c],hi[m]];[hk[m],hk[c]]=[hk[c],hk[m]];c=m;}return i;};
+  for(let i=0;i<N;i++)if(drain[i]){lvl[i]=H[i];push(i,H[i]);}
+  while(n){
+    const i=pop();if(done[i])continue;done[i]=1;
+    const x=i%GW,y=(i/GW)|0,L=lvl[i];
+    const nb=[x>0?i-1:-1,x<GW-1?i+1:-1,y>0?i-GW:-1,y<GH-1?i+GW:-1];
+    for(const j of nb){if(j<0||hard[j]||done[j])continue;const l=Math.max(H[j],L);if(l<lvl[j]){lvl[j]=l;push(j,l);}}
+  }
+  V0=0;
+  for(let i=0;i<N;i++){
+    let w=(!hard[i]&&!drain[i]&&lvl[i]<Infinity)?lvl[i]-H[i]:0;
+    if(w<0.02)w=0;W[i]=w;V0+=w;
+  }
+  if(V0<1)V0=1;
+}
+
+function build(idx){
+  const L=LEVELS[idx], r=rng(L.seed);
+  H=new Float32Array(N);FL=new Float32Array(N);W=new Float32Array(N);
+  fL=new Float32Array(N);fR=new Float32Array(N);fU=new Float32Array(N);fD=new Float32Array(N);
+  wet=new Float32Array(N);soft=new Float32Array(N);tmp=new Float32Array(N);
+  hard=new Uint8Array(N);drain=new Uint8Array(N);lineM=new Float32Array(N);grain=new Float32Array(N);
+  const n1=valueNoise(r,35), n2=valueNoise(r,12), n3=valueNoise(r,4);
+  const [sx0,sy0,sx1,sy1]=drainSeg(L.drain);
+  for(let y=0;y<GH;y++)for(let x=0;x<GW;x++){
+    const i=y*GW+x;
+    let h=0.002*distSeg(x,y,sx0,sy0,sx1,sy1)+0.006*n1(x,y)+0.0025*n2(x,y)+0.0012*n3(x,y);
+    FL[i]=h-MAXDIG; // かたい地盤は全体の傾きに沿っている
+    for(const d of L.dips){const q=((x-d.x)/d.rx)**2+((y-d.y)/d.ry)**2;if(q<1)h-=d.d*(1-q)*(1-q);}
+    H[i]=h; grain[i]=r()*2-1;
+    let lm=0;
+    for(const ln of L.lines){
+      let dd;
+      if(ln.t==="seg")dd=distSeg(x,y,ln.x0,ln.y0,ln.x1,ln.y1);
+      else{const a=Math.atan2(y-ln.cy,x-ln.cx)*180/Math.PI;const aa=a<0?a+360:a;
+        dd=(aa>=ln.a0&&aa<=ln.a1)?Math.abs(Math.hypot(x-ln.cx,y-ln.cy)-ln.r):99;}
+      lm=Math.max(lm,Math.max(0,Math.min(1,(1.7-dd)/0.9)));
+    }
+    lineM[i]=lm;
+  }
+  // 側溝：5マス（20cm）幅のグレーチング
+  const dr=L.drain;
+  for(let k=dr.a;k<dr.b;k++)for(let t=0;t<5;t++){
+    let x,y;
+    if(dr.edge==="bottom"){x=k;y=GH-1-t}else if(dr.edge==="top"){x=k;y=t}else if(dr.edge==="right"){x=GW-1-t;y=k}else{x=t;y=k}
+    const i=y*GW+x;drain[i]=1;H[i]-=0.4;lineM[i]=0;
+  }
+  for(const o of L.obj){
+    if(o.t==="bar"||o.t==="seat"||o.t==="net")continue;
+    if(o.t==="stone")o.shape=Array.from({length:9},()=>0.75+r()*0.4);
+    for(let y=0;y<GH;y++)for(let x=0;x<GW;x++){
+      let inside;
+      if(o.t==="stage"||o.t==="sand"||o.t==="block")inside=x>=o.x0&&x<o.x1&&y>=o.y0&&y<o.y1;
+      else inside=Math.hypot(x+.5-o.x,y+.5-o.y)<o.r*0.92;
+      if(inside){const i=y*GW+x;hard[i]=1;H[i]=5;lineM[i]=0;}
+    }
+  }
+  H0=H.slice();
+  settleRain();
+  for(let i=0;i<N;i++){wet[i]=W[i]>0?1:0.75;soft[i]=W[i]>0?1:0;}
+  for(let k=0;k<80;k++)soakSweep(20); // 水たまりのまわりは、もともとしみている
+  drained=0;soilDug=0;playTicks=0;started=false;clearTicks=0;rateHist=[];cleared=false;dismissed=false;ripples=[];
+  leaves=[];
+  const wetCells=[];for(let i=0;i<N;i++)if(W[i]>0.06)wetCells.push(i);
+  for(let k=0;k<L.leaves&&wetCells.length;k++){
+    const i=wetCells[Math.floor(r()*wetCells.length)];
+    leaves.push({x:(i%GW)+r(),y:Math.floor(i/GW)+r(),a:r()*6.28,kind:r()<.6?0:1,s:0.9+r()*0.4,gone:0});
+  }
+  makeGrain(L.seed);
+  ui.place.textContent=L.name;
+  ui.result.hidden=true;
+  renderLevels();
+}
+
+// 水のしみこみ：水のあるマスはやわらかくなり、まわりへ少しずつ広がる
+function soakSweep(rate){
+  for(let y=0;y<GH;y++)for(let x=0;x<GW;x++){
+    const i=y*GW+x;if(hard[i]){tmp[i]=0;continue;}
+    let target;
+    if(W[i]>0.003)target=1;
+    else{
+      let m=0;
+      if(x>0&&soft[i-1]>m)m=soft[i-1];
+      if(x<GW-1&&soft[i+1]>m)m=soft[i+1];
+      if(y>0&&soft[i-GW]>m)m=soft[i-GW];
+      if(y<GH-1&&soft[i+GW]>m)m=soft[i+GW];
+      target=m*0.82;
+    }
+    const s=soft[i];
+    tmp[i]=s<target?s+(target-s)*0.03*rate:Math.max(target,s-0.0012*rate);
+  }
+  const t=soft;soft=tmp;tmp=t;
+}
+
+function step(play){
+  for(let y=0;y<GH;y++){
+    const row=y*GW;
+    for(let x=0;x<GW;x++){
+      const i=row+x, w=W[i];
+      if(hard[i]||w<=0){fL[i]=fR[i]=fU[i]=fD[i]=0;continue;}
+      const Sf=H[i]+w;let l=0,r=0,u=0,d=0;
+      const DAMP=dampOf(w), Cw=C*(w>=0.15?1:Math.max(0.05,w/0.15));
+      if(x>0&&!hard[i-1]){l=fL[i]*DAMP+Cw*(Sf-H[i-1]-W[i-1]);if(l<0)l=0;}
+      if(x<GW-1&&!hard[i+1]){r=fR[i]*DAMP+Cw*(Sf-H[i+1]-W[i+1]);if(r<0)r=0;}
+      if(y>0&&!hard[i-GW]){u=fU[i]*DAMP+Cw*(Sf-H[i-GW]-W[i-GW]);if(u<0)u=0;}
+      if(y<GH-1&&!hard[i+GW]){d=fD[i]*DAMP+Cw*(Sf-H[i+GW]-W[i+GW]);if(d<0)d=0;}
+      const s=l+r+u+d;
+      if(s>w){const k=w/s;l*=k;r*=k;u*=k;d*=k;}
+      fL[i]=l;fR[i]=r;fU[i]=u;fD[i]=d;
+    }
+  }
+  for(let y=0;y<GH;y++){
+    const row=y*GW;
+    for(let x=0;x<GW;x++){
+      const i=row+x;if(hard[i])continue;
+      let inflow=0;
+      if(x>0)inflow+=fR[i-1];
+      if(x<GW-1)inflow+=fL[i+1];
+      if(y>0)inflow+=fD[i-GW];
+      if(y<GH-1)inflow+=fU[i+GW];
+      let w=W[i]+inflow-(fL[i]+fR[i]+fU[i]+fD[i]);
+      if(drain[i]){if(play)drained+=w;w=0;}
+      W[i]=w<0?0:w;
+    }
+  }
+}
+
+function moveLeaves(){
+  for(const lf of leaves){
+    if(lf.gone){lf.gone+=0.02;continue;}
+    const cx=Math.floor(lf.x),cy=Math.floor(lf.y);
+    if(cx<0||cy<0||cx>=GW||cy>=GH)continue;
+    const i=cy*GW+cx,w=W[i];
+    if(drain[i]){lf.gone=0.01;continue;}
+    if(w<0.008)continue;
+    const dd=Math.max(w,0.03);
+    let vx=(fR[i]-fL[i])/dd, vy=(fD[i]-fU[i])/dd;
+    const sp=Math.hypot(vx,vy);
+    if(sp>0.45){vx*=0.45/sp;vy*=0.45/sp;}
+    const nx=lf.x+vx*0.8, ny=lf.y+vy*0.8;
+    const ni=Math.floor(ny)*GW+Math.floor(nx);
+    if(nx>=0&&ny>=0&&nx<GW&&ny<GH&&!hard[ni]){lf.x=nx;lf.y=ny;}
+    lf.a+=(vx-vy)*0.08;
+  }
+}
+
+// ---------- digging ----------
+// rate: なぞった1区間ぶんの力。かたい土ではほとんど削れないが、こするたびに少しほぐれる。
+function brush(gx,gy,mode,rate,dx,dy){
+  const R=mode==="hand"?HAND:STICK;
+  let inWater=0, removed=0;
+  for(let y=Math.floor(gy-R);y<=Math.ceil(gy+R);y++)for(let x=Math.floor(gx-R);x<=Math.ceil(gx+R);x++){
+    if(x<0||y<0||x>=GW||y>=GH)continue;
+    const i=y*GW+x;if(hard[i]||drain[i])continue;
+    const d=Math.hypot(x+.5-gx,y+.5-gy);if(d>R)continue;
+    const f=mode==="stick"?1-0.6*(d/R):1-(d/R)**2;
+    if(W[i]>0.02)inWater++;
+    const s=soft[i];
+    let amt=0;
+    if(mode==="stick"){
+      // どんなにかたくても少しずつ掘れる。ほぐれるのは筋の中だけ
+      amt=0.013*f*rate*(0.35+0.65*s);
+      soft[i]=Math.min(1,s+0.004*f*rate);
+    }else if(mode==="hand"){
+      // やわらかい土だけ、たっぷりかき出せる
+      const e=Math.max(0,Math.min(1,(s-HAND_MIN)/(0.9-HAND_MIN)));
+      amt=0.03*f*rate*e*e;
+    }
+    const take=Math.min(amt,H[i]-Math.min(FL[i],H0[i]-0.05));
+    if(take>0){H[i]-=take;soilDug+=take*CELL_L;removed+=take;wet[i]=Math.max(wet[i],0.55+0.4*s);lineM[i]*=0.85;}
+  }
+  if(removed>0)deposit(gx,gy,R,mode,removed,dx,dy);
+  if(inWater&&Math.random()<(mode==="hand"?0.5:0.15)&&ripples.length<30)ripples.push({x:gx,y:gy,t:0,r:mode==="hand"?2:0.6});
+}
+// 掘った土は溝のわきへ。なぞる向きがわかれば左右の土手に、押しつけているだけなら周りにぐるっと。
+function deposit(gx,gy,R,mode,amount,dx,dy){
+  const off=R+(mode==="hand"?1.6:1.0), sr=mode==="hand"?2.0:1.1;
+  const pts=[];
+  const len=Math.hypot(dx||0,dy||0);
+  if(len>0.01){const px=-dy/len,py=dx/len;pts.push([gx+px*off,gy+py*off],[gx-px*off,gy-py*off]);}
+  else for(let k=0;k<6;k++){const a=k/6*6.283+tick*0.37;pts.push([gx+Math.cos(a)*off,gy+Math.sin(a)*off]);}
+  const cells=[],wts=[];let sum=0;
+  for(const [cx,cy] of pts){
+    for(let y=Math.floor(cy-sr);y<=Math.ceil(cy+sr);y++)for(let x=Math.floor(cx-sr);x<=Math.ceil(cx+sr);x++){
+      if(x<0||y<0||x>=GW||y>=GH)continue;
+      const i=y*GW+x;if(hard[i]||drain[i])continue;
+      if(Math.hypot(x+.5-gx,y+.5-gy)<=R)continue;      // 掘っているところには戻さない
+      const d=Math.hypot(x+.5-cx,y+.5-cy);if(d>sr)continue;
+      const w=1-(d/sr)**2;cells.push(i);wts.push(w);sum+=w;
+    }
+  }
+  if(!sum)return;
+  for(let k=0;k<cells.length;k++){
+    const i=cells[k], add=Math.min(amount*wts[k]/sum,H0[i]+MAXPILE-H[i]);
+    if(add<=0)continue;
+    H[i]+=add;
+    soft[i]=Math.max(soft[i],0.75);                     // 積もった土はふかふか
+    wet[i]=Math.max(wet[i],0.45);lineM[i]*=0.9;
+  }
+}
+function softAt(gx,gy){
+  const x=Math.floor(gx),y=Math.floor(gy);if(x<0||y<0||x>=GW||y>=GH)return null;
+  const i=y*GW+x;if(hard[i]||drain[i])return null;return soft[i];
+}
+
+// ---------- rendering ----------
+const cv=document.getElementById("cv"), ctx=cv.getContext("2d");
+const gcv=document.createElement("canvas");gcv.width=GW;gcv.height=GH;const gctx=gcv.getContext("2d");
+const wcv=document.createElement("canvas");wcv.width=GW;wcv.height=GH;const wctx=wcv.getContext("2d");
+const gImg=gctx.createImageData(GW,GH), wImg=wctx.createImageData(GW,GH);
+let grainCv=null, cs=1, u=1; // cs: 1マスのpx, u: 10cmのpx
+
+function resize(){
+  const r=cv.getBoundingClientRect(), dpr=Math.min(2,window.devicePixelRatio||1);
+  cv.width=Math.max(1,Math.round(r.width*dpr));cv.height=Math.max(1,Math.round(r.height*dpr));
+  cs=cv.width/GW;u=cs*S;
+  makeGrain(LEVELS[levelIdx].seed);
+  if(H)render();
+}
+function makeGrain(seed){
+  if(!cv.width)return;
+  const r=rng(seed*7+3);
+  grainCv=document.createElement("canvas");grainCv.width=cv.width;grainCv.height=cv.height;
+  const g=grainCv.getContext("2d"), A=cv.width*cv.height;
+  for(let k=0;k<A/26;k++){
+    const x=r()*cv.width,y=r()*cv.height,s=r()<.85?1:2;
+    g.fillStyle=r()<.5?`rgba(255,248,232,${.07+r()*.13})`:`rgba(60,40,20,${.06+r()*.12})`;
+    g.fillRect(x,y,s,s);
+  }
+  for(let k=0;k<A/2600;k++){
+    const x=r()*cv.width,y=r()*cv.height,rr=(0.1+r()*0.22)*u;
+    g.fillStyle=`rgba(${120+r()*50|0},${105+r()*40|0},${90+r()*30|0},.75)`;
+    g.beginPath();g.ellipse(x,y,rr,rr*(0.6+r()*0.4),r()*3,0,6.283);g.fill();
+    g.fillStyle="rgba(255,255,255,.25)";g.beginPath();g.ellipse(x-rr*.3,y-rr*.3,rr*.35,rr*.25,0,0,6.283);g.fill();
+  }
+}
+
+function render(){
+  const t=tick/30;
+  const gd=gImg.data, wd=wImg.data;
+  for(let y=0;y<GH;y++)for(let x=0;x<GW;x++){
+    const i=y*GW+x,p=i*4;
+    if(drain[i]){gd[p]=150;gd[p+1]=152;gd[p+2]=148;gd[p+3]=255;wd[p+3]=0;continue;}
+    const hc=H[i];
+    const hl=(x>0&&!hard[i-1]&&!drain[i-1])?H[i-1]:hc, hr=(x<GW-1&&!hard[i+1]&&!drain[i+1])?H[i+1]:hc;
+    const hu=(y>0&&!hard[i-GW]&&!drain[i-GW])?H[i-GW]:hc, hd=(y<GH-1&&!hard[i+GW]&&!drain[i+GW])?H[i+GW]:hc;
+    let shade=1+((hr-hl)*0.8+(hd-hu))*5; // 光は左上から（物の影と同じ向き）
+    shade=Math.max(.62,Math.min(1.3,shade));
+    const dig=Math.max(0,H0[i]-hc);shade*=1-dig*0.4;
+    const w=wet[i], gr=grain[i]*7;
+    let R=203+(134-203)*w+gr, G=168+(101-168)*w+gr*.9, B=124+(70-124)*w+gr*.7;
+    const lm=lineM[i];
+    if(lm>0){const k=lm*(1-0.3*w);R+=(238-R)*k;G+=(234-G)*k;B+=(222-B)*k;}
+    gd[p]=R*shade;gd[p+1]=G*shade;gd[p+2]=B*shade;gd[p+3]=255;
+
+    const d=W[i];
+    if(d>0.003&&!hard[i]){
+      const k=Math.min(1,d/0.35);
+      let r=178+(54-178)*k, g=198+(84-198)*k, b=208+(104-208)*k;
+      const nx=fR[i]-fL[i],ny=fD[i]-fU[i];
+      const sp=Math.hypot(nx,ny)/Math.max(d,0.02);
+      const sh=reduced?0.5:0.5+0.5*Math.sin(t*2.0+x*0.36-y*0.22+Math.sin(t*0.6+y*0.12)*1.5);
+      const hi=Math.min(1,sp*1.6)*0.24*(0.4+sh)+0.05*sh*k;
+      r+=(255-r)*hi;g+=(255-g)*hi;b+=(255-b)*hi;
+      let a=Math.min(0.9,0.3+d*2.2);
+      if(d<0.012)a*=d/0.012;
+      wd[p]=r;wd[p+1]=g;wd[p+2]=b;wd[p+3]=a*255;
+    }else wd[p+3]=0;
+  }
+  gctx.putImageData(gImg,0,0);wctx.putImageData(wImg,0,0);
+  ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality="high";
+  ctx.drawImage(gcv,0,0,cv.width,cv.height);
+  if(grainCv)ctx.drawImage(grainCv,0,0);
+  ctx.drawImage(wcv,0,0,cv.width,cv.height);
+  drawRipples();
+  drawLeaves();
+  drawDrain();
+  drawObjects();
+  drawCursor();
+}
+
+function drawRipples(){
+  ctx.lineWidth=Math.max(1,u*0.08);
+  for(const rp of ripples){
+    const a=1-rp.t;if(a<=0)continue;
+    ctx.strokeStyle=`rgba(240,248,252,${a*0.55})`;
+    ctx.beginPath();ctx.arc(rp.x*cs,rp.y*cs,(0.3*rp.r+rp.t*1.6*rp.r)*u,0,6.283);ctx.stroke();
+  }
+}
+function drawLeaves(){
+  for(const lf of leaves){
+    const alpha=lf.gone?Math.max(0,1-lf.gone*3):1;if(alpha<=0)continue;
+    ctx.save();ctx.globalAlpha=alpha;ctx.translate(lf.x*cs,lf.y*cs);ctx.rotate(lf.a);
+    const s=u*0.5*lf.s*(lf.gone?1-lf.gone:1);
+    if(lf.kind===0){ // いちょう
+      ctx.fillStyle="#e2b020";ctx.beginPath();ctx.moveTo(0,s*0.55);
+      ctx.quadraticCurveTo(-s*1.05,-s*0.1,-s*0.7,-s*0.65);ctx.quadraticCurveTo(0,-s*0.85,s*0.7,-s*0.65);
+      ctx.quadraticCurveTo(s*1.05,-s*0.1,0,s*0.55);ctx.fill();
+      ctx.strokeStyle="#b98a12";ctx.lineWidth=Math.max(1,s*0.08);ctx.beginPath();ctx.moveTo(0,s*0.5);ctx.lineTo(0,s*1.05);ctx.stroke();
+    }else{ // さくらの落ち葉
+      ctx.fillStyle="#c4512e";ctx.beginPath();ctx.ellipse(0,0,s*0.38,s*0.7,0,0,6.283);ctx.fill();
+      ctx.strokeStyle="rgba(90,30,15,.6)";ctx.lineWidth=Math.max(1,s*0.06);ctx.beginPath();ctx.moveTo(0,-s*0.65);ctx.lineTo(0,s*0.95);ctx.stroke();
+    }
+    ctx.restore();
+  }
+}
+function drawDrain(){
+  const dr=LEVELS[levelIdx].drain, T=5;
+  let x,y,w,h,horiz=dr.edge==="bottom"||dr.edge==="top";
+  if(dr.edge==="bottom"){x=dr.a;y=GH-T;w=dr.b-dr.a;h=T}
+  else if(dr.edge==="top"){x=dr.a;y=0;w=dr.b-dr.a;h=T}
+  else if(dr.edge==="right"){x=GW-T;y=dr.a;w=T;h=dr.b-dr.a}
+  else{x=0;y=dr.a;w=T;h=dr.b-dr.a}
+  const X=x*cs,Y=y*cs,Wd=w*cs,Hd=h*cs,pad=u*0.2;
+  ctx.fillStyle="#a9ada8";ctx.fillRect(X-pad,Y-pad,Wd+pad*2,Hd+pad*2);
+  ctx.fillStyle="#2a2f31";ctx.fillRect(X+pad,Y+pad,Wd-pad*2,Hd-pad*2);
+  ctx.strokeStyle="#7d8487";ctx.lineWidth=Math.max(1,u*0.1);
+  ctx.beginPath();
+  const gap=u*0.32;
+  if(horiz){for(let k=X+pad+gap*0.5;k<X+Wd-pad;k+=gap){ctx.moveTo(k,Y+pad);ctx.lineTo(k,Y+Hd-pad);}}
+  else{for(let k=Y+pad+gap*0.5;k<Y+Hd-pad;k+=gap){ctx.moveTo(X+pad,k);ctx.lineTo(X+Wd-pad,k);}}
+  ctx.stroke();
+  ctx.strokeStyle="#8f948f";ctx.lineWidth=Math.max(1,u*0.08);ctx.strokeRect(X-pad,Y-pad,Wd+pad*2,Hd+pad*2);
+}
+function drawObjects(){
+  const L=LEVELS[levelIdx];
+  for(const o of L.obj){
+    if(o.t==="net"){
+      const X=o.x0*cs,Y=o.y0*cs,Wd=(o.x1-o.x0)*cs,Hd=(o.y1-o.y0)*cs;
+      ctx.fillStyle="rgba(30,30,30,.12)";ctx.fillRect(X,Y,Wd,Hd);
+      ctx.strokeStyle="rgba(250,250,250,.55)";ctx.lineWidth=Math.max(1,u*0.05);ctx.beginPath();
+      for(let k=0;k<=Wd;k+=u*0.6){ctx.moveTo(X+k,Y);ctx.lineTo(X+k,Y+Hd);}
+      for(let k=0;k<=Hd;k+=u*0.6){ctx.moveTo(X,Y+k);ctx.lineTo(X+Wd,Y+k);}
+      ctx.stroke();
+    }else if(o.t==="seat"){
+      const X=o.x*cs,Y=o.y*cs;
+      ctx.fillStyle="rgba(40,28,16,.25)";ctx.fillRect(X-u*1.5+u*0.9,Y-u*0.5+u*1.3,u*3,u*1);
+      ctx.strokeStyle="rgba(200,205,208,.7)";ctx.lineWidth=Math.max(1,u*0.08);ctx.beginPath();
+      ctx.moveTo(X-u*1.3,Y);ctx.lineTo(X-u*1.3,36*S*cs);ctx.moveTo(X+u*1.3,Y);ctx.lineTo(X+u*1.3,36*S*cs);ctx.stroke();
+      ctx.fillStyle="#a8542f";ctx.fillRect(X-u*1.5,Y-u*0.5,u*3,u*1);
+      ctx.fillStyle="rgba(255,255,255,.18)";ctx.fillRect(X-u*1.5,Y-u*0.5,u*3,u*0.3);
+    }
+  }
+  for(const o of L.obj){
+    if(o.t!=="bar")continue;
+    ctx.lineCap="round";
+    ctx.strokeStyle="rgba(30,20,10,.22)";ctx.lineWidth=u*0.55;
+    ctx.beginPath();ctx.moveTo(o.x0*cs+1.6*u,o.y0*cs+1.2*u);ctx.lineTo(o.x1*cs+1.6*u,o.y1*cs+1.2*u);ctx.stroke();
+    ctx.strokeStyle="#9fa9ae";ctx.lineWidth=u*0.5;
+    ctx.beginPath();ctx.moveTo(o.x0*cs,o.y0*cs);ctx.lineTo(o.x1*cs,o.y1*cs);ctx.stroke();
+    ctx.strokeStyle="rgba(255,255,255,.55)";ctx.lineWidth=u*0.13;
+    ctx.beginPath();ctx.moveTo(o.x0*cs-0.12*u,o.y0*cs);ctx.lineTo(o.x1*cs-0.12*u,o.y1*cs);ctx.stroke();
+  }
+  for(const o of L.obj){
+    if(o.t==="post"){
+      const X=o.x*cs,Y=o.y*cs,R=o.r*cs;
+      ctx.fillStyle="rgba(40,28,16,.25)";ctx.beginPath();ctx.ellipse(X+R*.5,Y+R*.5,R*1.15,R*1.0,0,0,6.283);ctx.fill();
+      ctx.fillStyle="#3b6f8f";ctx.beginPath();ctx.arc(X,Y,R,0,6.283);ctx.fill();
+      ctx.fillStyle="#5f93b2";ctx.beginPath();ctx.arc(X-R*.25,Y-R*.25,R*.55,0,6.283);ctx.fill();
+    }else if(o.t==="stone"){
+      const X=o.x*cs,Y=o.y*cs,R=o.r*cs,sh=o.shape,K=sh.length;
+      const path=(ox,oy,sc)=>{ctx.beginPath();for(let k=0;k<K;k++){const a=k/K*6.283,rr=R*sh[k]*sc;const px=X+ox+Math.cos(a)*rr,py=Y+oy+Math.sin(a)*rr;k?ctx.lineTo(px,py):ctx.moveTo(px,py);}ctx.closePath();};
+      ctx.fillStyle="rgba(40,28,16,.28)";path(R*.25,R*.3,1.05);ctx.fill();
+      ctx.fillStyle="#8b8c86";path(0,0,1);ctx.fill();
+      ctx.fillStyle="#a6a7a0";path(-R*.18,-R*.2,.62);ctx.fill();
+    }else if(o.t==="stage"){
+      const X=o.x0*cs,Y=o.y0*cs,Wd=(o.x1-o.x0)*cs,Hd=(o.y1-o.y0)*cs;
+      ctx.fillStyle="rgba(40,28,16,.28)";ctx.fillRect(X+u*.6,Y+u*.8,Wd,Hd);
+      ctx.fillStyle="#6f7c82";ctx.fillRect(X,Y,Wd,Hd);
+      ctx.fillStyle="#8d9aa0";ctx.fillRect(X+u*.5,Y+u*.4,Wd-u,Hd-u*2.6);
+      ctx.fillStyle="#5e6a70";
+      ctx.fillRect(X+Wd*.35,Y+Hd-u*1.6,Wd*.3,u*.5);ctx.fillRect(X+Wd*.35,Y+Hd-u*.8,Wd*.3,u*.5);
+    }else if(o.t==="sand"){
+      const X=o.x0*cs,Y=o.y0*cs,Wd=(o.x1-o.x0)*cs,Hd=(o.y1-o.y0)*cs,f=u*1.3;
+      ctx.fillStyle="rgba(40,28,16,.25)";ctx.fillRect(X+u*.5,Y+u*.6,Wd,Hd);
+      ctx.fillStyle="#8a6845";ctx.fillRect(X,Y,Wd,Hd);
+      ctx.fillStyle="#e2cfa6";ctx.fillRect(X+f,Y+f,Wd-f*2,Hd-f*2);
+      const r=rng(9);ctx.fillStyle="rgba(150,120,80,.35)";
+      for(let k=0;k<260;k++){ctx.fillRect(X+f+r()*(Wd-f*2),Y+f+r()*(Hd-f*2),Math.max(1,u*.12),Math.max(1,u*.12));}
+      ctx.strokeStyle="rgba(160,130,90,.5)";ctx.lineWidth=Math.max(1,u*.25);
+      ctx.beginPath();ctx.arc(X+Wd*.62,Y+Hd*.58,u*3,0,6.283);ctx.stroke(); // つくりかけの山
+      ctx.fillStyle="#b8392e";ctx.save();ctx.translate(X+Wd*.3,Y+Hd*.32);ctx.rotate(-.5);
+      ctx.fillRect(-u*.3,-u*1.6,u*.6,u*2.2);ctx.beginPath();ctx.ellipse(0,u*1,u*.9,u*1.1,0,0,6.283);ctx.fill();ctx.restore(); // スコップ
+    }else if(o.t==="block"){
+      const X=o.x0*cs,Y=o.y0*cs,Wd=(o.x1-o.x0)*cs,Hd=(o.y1-o.y0)*cs;
+      ctx.fillStyle="rgba(40,28,16,.28)";ctx.fillRect(X+u*.6,Y+u*.8,Wd,Hd);
+      if(o.style==="shed"){
+        ctx.fillStyle="#5f7d63";ctx.fillRect(X,Y,Wd,Hd);
+        ctx.strokeStyle="rgba(255,255,255,.12)";ctx.lineWidth=Math.max(1,u*.12);ctx.beginPath();
+        for(let k=u*.8;k<Wd;k+=u*.8){ctx.moveTo(X+k,Y);ctx.lineTo(X+k,Y+Hd);}ctx.stroke();
+        ctx.fillStyle="#4b6450";ctx.fillRect(X,Y+Hd-u*.6,Wd,u*.6);
+        ctx.fillStyle="#7d8a80";ctx.fillRect(X+Wd*.4,Y+Hd-u*.6,Wd*.2,u*.6);
+      }else if(o.style==="fountain"){
+        ctx.fillStyle="#9fa39e";ctx.fillRect(X,Y,Wd,Hd);
+        ctx.fillStyle="#c3c6c1";ctx.fillRect(X+u*.5,Y+u*.5,Wd-u,Hd-u);
+        ctx.fillStyle="#8a8f8a";ctx.fillRect(X+u*1.2,Y+Hd*.45,Wd-u*2.4,Hd*.3);
+        for(let k=0;k<4;k++){const fx=X+Wd*(0.2+k*0.2);ctx.fillStyle="#d8dcdd";ctx.beginPath();ctx.arc(fx,Y+Hd*.3,u*.45,0,6.283);ctx.fill();
+          ctx.fillStyle="#6c7377";ctx.beginPath();ctx.arc(fx,Y+Hd*.3,u*.18,0,6.283);ctx.fill();}
+      }else{
+        ctx.fillStyle="#efede6";ctx.fillRect(X,Y,Wd,Hd);
+        ctx.strokeStyle="rgba(120,115,100,.35)";ctx.lineWidth=Math.max(1,u*.08);ctx.beginPath();
+        for(let k=u*.6;k<Hd;k+=u*.6){ctx.moveTo(X+u*.3,Y+k);ctx.lineTo(X+Wd-u*.3,Y+k);}ctx.stroke();
+        ctx.strokeStyle="#c9c5b8";ctx.lineWidth=Math.max(1,u*.15);ctx.strokeRect(X,Y,Wd,Hd);
+      }
+    }else if(o.t==="tree"){
+      const X=o.x*cs,Y=o.y*cs,R=o.r*cs;
+      const g=ctx.createRadialGradient(X,Y,R,X,Y,R*5);g.addColorStop(0,"rgba(30,40,20,.28)");g.addColorStop(1,"rgba(30,40,20,0)");
+      ctx.fillStyle=g;ctx.beginPath();ctx.arc(X,Y,R*5,0,6.283);ctx.fill();
+      ctx.strokeStyle="#5a4532";ctx.lineCap="round";
+      for(let k=0;k<5;k++){const a=k*1.25+.4;ctx.lineWidth=u*.7;ctx.beginPath();ctx.moveTo(X,Y);ctx.quadraticCurveTo(X+Math.cos(a)*R*1.4,Y+Math.sin(a)*R*1.6,X+Math.cos(a+.3)*R*2,Y+Math.sin(a+.3)*R*2);ctx.stroke();}
+      ctx.fillStyle="#5a4532";ctx.beginPath();ctx.arc(X,Y,R,0,6.283);ctx.fill();
+      ctx.strokeStyle="#76604a";ctx.lineWidth=Math.max(1,u*.2);ctx.beginPath();ctx.arc(X,Y,R*.6,0,6.283);ctx.stroke();
+    }
+  }
+}
+function drawCursor(){
+  if(!hover)return;
+  const X=hover.x*cs,Y=hover.y*cs;
+  const mode=drawingP?stroke:tool;
+  const s=softAt(hover.x,hover.y);
+  if(mode==="stick"){
+    ctx.lineCap="round";
+    ctx.strokeStyle="rgba(40,26,12,.25)";ctx.lineWidth=u*0.3;
+    ctx.beginPath();ctx.moveTo(X+u*0.3,Y+u*0.25);ctx.lineTo(X+u*3.2,Y+u*2.1);ctx.stroke();
+    ctx.strokeStyle="#7a5a36";ctx.lineWidth=u*0.28;
+    ctx.beginPath();ctx.moveTo(X,Y);ctx.lineTo(X+u*2.6,Y-u*1.9);ctx.stroke();
+    ctx.strokeStyle="rgba(255,240,210,.35)";ctx.lineWidth=u*0.09;
+    ctx.beginPath();ctx.moveTo(X+u*0.1,Y-u*0.12);ctx.lineTo(X+u*2.6,Y-u*2.0);ctx.stroke();
+    ctx.strokeStyle="rgba(255,255,255,.7)";ctx.lineWidth=Math.max(1,u*0.05);
+    ctx.beginPath();ctx.arc(X,Y,STICK*cs,0,6.283);ctx.stroke();
+  }else if(mode==="hand"){
+    const ok=s!==null&&s>=HAND_MIN, R=HAND*cs;
+    ctx.fillStyle=ok?"rgba(236,196,160,.38)":"rgba(236,196,160,.16)";
+    ctx.beginPath();ctx.ellipse(X,Y+R*0.15,R*0.62,R*0.72,0,0,6.283);ctx.fill();
+    for(let k=0;k<4;k++){ctx.beginPath();ctx.ellipse(X+(k-1.5)*R*0.32,Y-R*0.72,R*0.13,R*0.3,(k-1.5)*0.12,0,6.283);ctx.fill();}
+    ctx.beginPath();ctx.ellipse(X-R*0.78,Y-R*0.05,R*0.13,R*0.28,-0.7,0,6.283);ctx.fill();
+    ctx.strokeStyle=ok?"rgba(200,232,248,.9)":"rgba(255,170,150,.85)";
+    ctx.lineWidth=Math.max(1,u*0.06);ctx.setLineDash(ok?[]:[u*0.25,u*0.2]);
+    ctx.beginPath();ctx.arc(X,Y,R,0,6.283);ctx.stroke();ctx.setLineDash([]);
+  }
+}
+
+// ---------- input ----------
+let drawingP=false,last=null,hover=null,heldTicks=0,stroke="dig";
+function toGrid(e){const r=cv.getBoundingClientRect();return{x:(e.clientX-r.left)/r.width*GW,y:(e.clientY-r.top)/r.height*GH};}
+cv.addEventListener("contextmenu",e=>e.preventDefault());
+cv.addEventListener("pointerdown",e=>{
+  e.preventDefault();try{cv.setPointerCapture(e.pointerId)}catch(_){}
+  drawingP=true;stroke=tool;started=true;
+  if(stroke==="hand"&&!dug)ui.hint.textContent="手はやわらかい土しか掘れない。まず木の棒で筋を引こう";
+  const p=toGrid(e);last=p;hover=p;brush(p.x,p.y,stroke,1);markDug();
+});
+cv.addEventListener("pointermove",e=>{
+  const p=toGrid(e);hover=p;
+  if(!drawingP)return;
+  const d=Math.hypot(p.x-last.x,p.y-last.y), stepL=stroke==="hand"?1:0.5;
+  if(d<stepL)return;
+  const n=Math.ceil(d/stepL);
+  for(let k=1;k<=n;k++)brush(last.x+(p.x-last.x)*k/n,last.y+(p.y-last.y)*k/n,stroke,1,p.x-last.x,p.y-last.y);
+  last=p;heldTicks=0;
+});
+const endStroke=()=>{drawingP=false};
+cv.addEventListener("pointerup",endStroke);cv.addEventListener("pointercancel",endStroke);
+cv.addEventListener("pointerleave",()=>{if(!drawingP)hover=null});
+function markDug(){if(!dug&&stroke!=="hand"){dug=true;ui.hint.classList.add("off");}}
+
+// ---------- UI ----------
+const ui={place:document.getElementById("place"),hint:document.getElementById("hint"),result:document.getElementById("result"),
+  rstars:document.getElementById("rstars"),rtext:document.getElementById("rtext"),rt:document.getElementById("rt"),
+  vRem:document.getElementById("vRem"),vDrain:document.getElementById("vDrain"),vSoil:document.getElementById("vSoil"),barI:document.getElementById("barI"),
+  vHard:document.getElementById("vHard"),hardBar:document.getElementById("hardBar"),
+  tStick:document.getElementById("tStick"),tHand:document.getElementById("tHand"),vRate:document.getElementById("vRate"),vTime:document.getElementById("vTime"),vTimeSub:document.getElementById("vTimeSub"),fast:document.getElementById("fast"),
+  reset:document.getElementById("reset"),levels:document.getElementById("levels"),next:document.getElementById("next"),stay:document.getElementById("stay")};
+
+function starStr(n){return "★".repeat(n)+"☆".repeat(3-n);}
+function fmtTime(ms){const sec=Math.floor(ms/1000);return `${Math.floor(sec/60)}:${String(sec%60).padStart(2,"0")}`;}
+function renderLevels(){
+  ui.levels.innerHTML="";
+  LEVELS.forEach((L,k)=>{
+    const b=document.createElement("button");b.id="lv"+k;b.setAttribute("aria-pressed",k===levelIdx?"true":"false");
+    const bk=best[k], s=bk?bk.s:0;
+    b.innerHTML=`<span class="n">場所 ${k+1}</span><span class="t">${L.name}</span><span class="s">${s?starStr(s)+`<i>${fmtTime(bk.t)}</i>`:"まだ"}</span>`;
+    b.onclick=()=>{levelIdx=k;build(k);};
+    ui.levels.appendChild(b);
+  });
+}
+function setTool(t){tool=t;ui.tStick.setAttribute("aria-pressed",t==="stick");ui.tHand.setAttribute("aria-pressed",t==="hand");}
+ui.tStick.onclick=()=>setTool("stick");ui.tHand.onclick=()=>setTool("hand");
+ui.fast.onclick=()=>{fast=!fast;ui.fast.setAttribute("aria-pressed",fast);};
+ui.reset.onclick=()=>build(levelIdx);
+ui.next.onclick=()=>{levelIdx=(levelIdx+1)%LEVELS.length;build(levelIdx);};
+ui.stay.onclick=()=>{ui.result.hidden=true;dismissed=true;};
+
+const HARD_WORDS=["かちかち","かたい","ふつう","しめってる","どろどろ"];
+function updateHUD(){
+  let rem=0;for(let i=0;i<N;i++)rem+=W[i];
+  const frac=Math.max(0,Math.min(1,rem/V0));
+  ui.vRem.innerHTML=`${(rem*CELL_L).toFixed(2)} L<small>${(frac*100).toFixed(1)}%</small>`;
+  ui.barI.style.width=(frac*100)+"%";
+  const dl=Math.max(0,drained*CELL_L);
+  ui.vDrain.textContent=`${dl.toFixed(3)} L`;
+  rateHist.push([performance.now(),dl]);while(rateHist.length>12)rateHist.shift();
+  const [t0,d0]=rateHist[0],[t1,d1]=rateHist[rateHist.length-1];
+  const rate=t1>t0?(d1-d0)/((t1-t0)/1000):0;
+  ui.vRate.textContent=`いま ${Math.max(0,rate).toFixed(3)} L/秒`+(fast?"（早送り中）":"");
+  const par=LEVELS[levelIdx].par;
+  ui.vSoil.innerHTML=`${soilDug.toFixed(2)} L<small>目安 ${par} L</small>`;
+  const tt=cleared?clearTicks:playTicks;
+  ui.vTime.textContent=fmtTime(tt);
+  ui.vTimeSub.textContent=cleared?"クリア！":started?(fast?"早送りでも時計はふつう":"計測中"):"掘りはじめると計測";
+  const s=hover?softAt(hover.x,hover.y):null;
+  const lvl=s===null?-1:Math.min(4,Math.floor(s*4.999));
+  ui.vHard.innerHTML=lvl<0?"—":HARD_WORDS[lvl]+`<small>${s>=HAND_MIN?"手で掘れる":"棒だけ"}</small>`;
+  [...ui.hardBar.children].forEach((el,k)=>el.className=k<=lvl?"on":"");
+  if(!cleared&&frac<=GOAL){
+    cleared=true;clearTicks=playTicks;
+    const stars=soilDug<=par?3:soilDug<=par*1.8?2:1;
+    const prev=best[levelIdx];
+    best[levelIdx]={s:Math.max(stars,prev?prev.s:0),t:prev?Math.min(prev.t,clearTicks):clearTicks};
+    try{localStorage.setItem("suiro-best5",JSON.stringify(best))}catch(e){}
+    renderLevels();
+    setTimeout(()=>{
+      if(dismissed)return;
+      const L=LEVELS[levelIdx];
+      ui.rstars.innerHTML="★".repeat(stars)+`<span class="off">${"★".repeat(3-stars)}</span>`;
+      ui.rtext.textContent=`${L.name}の水たまりから、側溝へ ${Math.max(0,drained*CELL_L).toFixed(3)} L 流しました。ほった土は ${soilDug.toFixed(2)} L（目安 ${L.par} L）、かかった時間は ${fmtTime(clearTicks)}。`;
+      ui.next.textContent=levelIdx===LEVELS.length-1?"最初の場所へ":"次の場所へ";
+      ui.result.hidden=false;
+    },900);
+  }
+}
+
+// ---------- loop（30fps） ----------
+function simTick(){
+  tick++;
+  if(drawingP&&last){heldTicks++;if(heldTicks>1)brush(last.x,last.y,stroke,0.5);} // 押しつけてぐりぐり
+  const sub=fast?SUB*3:SUB;
+  for(let k=0;k<sub;k++){step(true);if(k%2===0)moveLeaves();}
+  if(tick%4===0)soakSweep(fast?3:1);
+  const dry=0.0004*(fast?3:1);
+  for(let i=0;i<N;i++){if(W[i]>0.003)wet[i]=1;else if(wet[i]>0)wet[i]=Math.max(0,wet[i]-dry);}
+  for(const rp of ripples)rp.t+=0.05;
+  ripples=ripples.filter(r=>r.t<1);
+  render();
+  if(tick%3===0)updateHUD();
+}
+let lastT=0;
+let prevTs=0;
+function frame(ts){
+  if(prevTs&&started&&!cleared)playTicks+=Math.min(100,ts-prevTs); // 経過時間はミリ秒（タブを離れた間は数えない）
+  prevTs=ts;
+  if(ts-lastT>=TICK_MS-2){lastT=ts;simTick();}
+  requestAnimationFrame(frame);
+}
+
+new ResizeObserver(resize).observe(cv);
+build(0);resize();updateHUD();
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

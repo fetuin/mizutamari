@@ -1,0 +1,7 @@
+# カウンターの記録データ・管理用パスワード（サーバー上でのみ作る）
+counter_data/*.dat
+counter_data/admin_password.txt
+
+# OSが作るファイル
+.DS_Store
+Thumbs.db
